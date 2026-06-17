@@ -1,6 +1,6 @@
 # tongflow-api-gemini
 
-Official TongFlow plugin. Text generation via [Google Gemini](https://ai.google.dev).
+Official [TongFlow](https://github.com/tong-io/tongflow) plugin. Text generation via [Google Gemini](https://ai.google.dev).
 
 ## Capabilities
 
