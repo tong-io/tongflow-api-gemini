@@ -1,0 +1,27 @@
+{
+    "env": [
+        {
+            "key": "GEMINI_API_KEY",
+            "required": true,
+            "description": "Google AI Studio API key (GOOGLE_API_KEY works as fallback)",
+            "url": "https://aistudio.google.com/apikey"
+        },
+        {
+            "key": "GEMINI_MODEL",
+            "description": "Override the default text model"
+        },
+        {
+            "key": "GEMINI_IMAGE_MODEL",
+            "description": "Override the default image model (e.g. gemini-3-pro-image)"
+        },
+        {
+            "key": "GEMINI_IMAGE_SIZE",
+            "default": "1K",
+            "description": "Output resolution; 2K/4K require a Flash/Pro image model"
+        },
+        {
+            "key": "GEMINI_IMAGE_ASPECT_RATIO",
+            "description": "Force an aspect ratio (defaults to the node's width/height)"
+        }
+    ]
+}
