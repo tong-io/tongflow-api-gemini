@@ -14,6 +14,10 @@ from tongflow.node_slots import NodeSlots
 from tongflow.protocol import Asset, asset, prompt_media_to_bytes
 from tongflow.slots import node_slot
 from tongflow.models.gen_text import GenTextInput, GenTextOutput
+from tongflow.models.audio_describe import (
+    AudioDescribeInput,
+    AudioDescribeOutput,
+)
 from tongflow.models.combine_text import CombineTextInput, CombineTextOutput
 from tongflow.models.split_text import SplitTextInput, SplitTextOutput
 from tongflow.models.image_gen import ImageGenInput, ImageGenOutput
@@ -33,7 +37,9 @@ logging.basicConfig(
 log = logging.getLogger("tongflow.plugins.gemini")
 
 
-DEFAULT_MODEL = "gemini-2.0-flash"
+# gemini-2.0-flash was retired by Google (generateContent 404s with
+# "no longer available"); 2.5-flash is the current stable flash tier.
+DEFAULT_MODEL = "gemini-2.5-flash"
 
 
 def _chat_gemini(
@@ -42,6 +48,7 @@ def _chat_gemini(
     model: str,
     user_message: str,
     response_schema: Dict[str, Any] | None = None,
+    extra_parts: List[Dict[str, Any]] | None = None,
 ) -> str:
     qs = urlencode({"key": api_key})
     url = (
@@ -56,8 +63,11 @@ def _chat_gemini(
     if response_schema is not None:
         generation_config["responseMimeType"] = "application/json"
         generation_config["responseSchema"] = response_schema
+    parts: List[Dict[str, Any]] = [{"text": user_message}]
+    if extra_parts:
+        parts.extend(extra_parts)
     payload: Dict[str, Any] = {
-        "contents": [{"role": "user", "parts": [{"text": user_message}]}],
+        "contents": [{"role": "user", "parts": parts}],
         "generationConfig": generation_config,
     }
     headers = {"Content-Type": "application/json"}
@@ -306,6 +316,25 @@ def gen_text(input: GenTextInput) -> GenTextOutput:
     return GenTextOutput(success=True, text=answer)
 
 
+@node_slot(NodeSlots.AUDIO_DESCRIBE)
+def audio_describe(input: AudioDescribeInput) -> AudioDescribeOutput:
+    instruction = (
+        (input.userPrompt or "").strip()
+        or (input.text or "").strip()
+        or "Describe this audio in detail (genre, mood, instruments, vocals, notable events)."
+    )
+    mime = (input.audio.mime or "audio/wav").strip() or "audio/wav"
+    answer = _chat_gemini(
+        api_key=_require_api_key(),
+        model=_resolve_model(),
+        user_message=instruction,
+        extra_parts=[
+            {"inlineData": {"mimeType": mime, "data": input.audio.bytesBase64}}
+        ],
+    )
+    return AudioDescribeOutput(success=True, text=answer)
+
+
 def _parse_split_texts(raw: str) -> list[str]:
     s = raw.strip()
     if s.startswith("```"):
@@ -436,6 +465,7 @@ def arrange_group(input: ArrangeGroupInput) -> ArrangeGroupOutput:
 # return to a dict. `Any` reflects the I/O boundary, not the plugin contract.
 _SLOT_HANDLERS: Dict[str, Any] = {
     NodeSlots.GEN_TEXT: gen_text,
+    NodeSlots.AUDIO_DESCRIBE: audio_describe,
     NodeSlots.COMBINE_TEXT: combine_text,
     NodeSlots.SPLIT_TEXT: split_text,
     NodeSlots.IMAGE_GEN: image_gen,
