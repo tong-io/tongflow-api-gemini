@@ -1,4 +1,9 @@
 {
+    "plugin": {
+        "name": "Gemini",
+        "description": "Text and image generation via Google Gemini (Nano Banana for images).",
+        "icon": "/plugins/tongflow-api-gemini.svg"
+    },
     "env": [
         {
             "key": "GEMINI_API_KEY",
