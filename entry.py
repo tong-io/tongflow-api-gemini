@@ -27,6 +27,21 @@ from tongflow.models.drop_video import DropVideoInput, DropVideoOutput
 from tongflow.models.arrange_group import ArrangeGroupInput, ArrangeGroupOutput
 from tongflow.llm_batch_handlers import arrange_group_output, drop_video_output
 
+# Slots this plugin is the default implementation of: the node picker lists
+# it first and a newly added node preselects it. Read statically by the
+# scanner (never executed), so any SDK version imports this file fine.
+TONGFLOW_DEFAULT_SLOTS = [
+    "gen-text",
+    "split-text",
+    "combine-text",
+    "arrange-group",
+    "drop-video",
+    "audio-describe",
+    "image-gen",
+    "image-edit",
+    "image-fusion",
+]
+
 # Plugin logs go to stderr — stdout is reserved for the ABI JSON response.
 # Level can be tuned via `TONGFLOW_PLUGIN_LOG_LEVEL` (default INFO).
 logging.basicConfig(
