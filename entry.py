@@ -121,17 +121,40 @@ def _env(name: str) -> str:
     return (os.environ.get(name) or "").strip()
 
 
+# Cached live catalog of model ids (models.list), fetched once per process. The
+# picker list is a curated shortlist; a picked id outside it is accepted as long
+# as the live catalog knows it (so newer Gemini/Veo/Imagen ids aren't blocked).
+_CATALOG_IDS: set[str] | None = None
+
+
+def _catalog_ids() -> set[str]:
+    global _CATALOG_IDS
+    if _CATALOG_IDS is None:
+        ids: set[str] = set()
+        try:
+            url = f"{BASE}/models?" + urlencode({"key": _require_api_key(), "pageSize": 1000})
+            obj = json.loads(urlopen(url, timeout=15).read().decode("utf-8", errors="replace"))  # noqa: S310
+            for m in obj.get("models") or []:
+                name = m.get("name") if isinstance(m, dict) else None
+                if isinstance(name, str) and name:
+                    ids.add(name.removeprefix("models/"))
+        except (HTTPError, URLError, ValueError, TimeoutError) as e:
+            log.warning("could not fetch Gemini model catalog: %s", e)
+        _CATALOG_IDS = ids
+    return _CATALOG_IDS
+
+
 def _active_model(slot: str, env_override: str = "") -> str:
     """Resolve the model for a slot: per-node pick > legacy env override >
     list default."""
     models = TONGFLOW_SLOT_MODELS[slot]
     if _REQUEST_MODEL:
-        if _REQUEST_MODEL not in models:
-            raise RuntimeError(
-                f"unknown model {_REQUEST_MODEL!r} for {slot}; "
-                f"available: {', '.join(models)}"
-            )
-        return _REQUEST_MODEL
+        if _REQUEST_MODEL in models or _REQUEST_MODEL in _catalog_ids():
+            return _REQUEST_MODEL
+        raise RuntimeError(
+            f"unknown model {_REQUEST_MODEL!r} for {slot} (not in the picker list "
+            f"or the live models catalog)"
+        )
     if env_override:
         return env_override
     return models[0]
