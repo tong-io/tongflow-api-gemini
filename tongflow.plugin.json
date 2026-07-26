@@ -1,7 +1,7 @@
 {
     "plugin": {
         "name": "Gemini",
-        "description": "Text and image generation via Google Gemini (Nano Banana for images).",
+        "description": "Google Gemini: text, vision, image (Nano Banana), Veo video, TTS, transcription — with a per-node model picker.",
         "icon": "/plugins/tongflow-api-gemini.svg"
     },
     "env": [
